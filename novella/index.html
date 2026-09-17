@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Последний сигнал — Визуальная новелла</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: #000;
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+  /* Фоны */
+  .bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transition: opacity 1s ease;
+    opacity: 0;
+  }
+  .bg.active { opacity: 1; }
+  .bg-ship { background: linear-gradient(135deg, #0a0a2a 0%, #1a1a3a 100%); }
+  .bg-asteroid { background: linear-gradient(135deg, #2a1a3a 0%, #0a0a1a 100%); }
+  .bg-station-ext { background: linear-gradient(135deg, #0a0a0a 0%, #2a0a0a 100%); }
+  .bg-station-int { background: linear-gradient(180deg, #0a0a0a 0%, #2a0a0a 100%); }
+  .bg-ending-good { background: linear-gradient(135deg, #001a2a 0%, #002a4a 100%); }
+  .bg-ending-bad { background: linear-gradient(135deg, #2a0000 0%, #000 100%); }
+  .bg-ending-dark { background: linear-gradient(135deg, #1a0033 0%, #000 100%); }
+
+  /* Когда будут картинки - замени на: */
+  /* .bg-ship { background: url('bg_ship.jpg') center/cover; } */
+
+  /* Персонажи */
+  #characters {
+    position: absolute;
+    bottom: 200px;
+    left: 0;
+    right: 0;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    pointer-events: none;
+  }
+  .character {
+    width: 200px;
+    height: 400px;
+    background-size: contain;
+    background-position: bottom center;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 0 20px rgba(0,255,255,0.5));
+    animation: float 3s ease-in-out infinite;
+    transition: all 0.5s;
+  }
+  .character.speaking {
+    filter: drop-shadow(0 0 30px rgba(255,255,0,0.8));
+    transform: scale(1.05);
+  }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+  /* Диалоговое окно */
+  #dialog-box {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(180deg, rgba(10,10,40,0.95) 0%, rgba(0,0,20,0.98) 100%);
+    border-top: 2px solid #0ff;
+    padding: 20px 40px;
+    box-shadow: 0 -5px 30px rgba(0,255,255,0.3);
+  }
+  #speaker {
+    color: #0ff;
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px #0ff;
+  }
+  #text {
+    font-size: 20px;
+    line-height: 1.6;
+    color: #fff;
+    min-height: 80px;
+  }
+  #continue-hint {
+    position: absolute;
+    bottom: 15px;
+    right: 30px;
+    color: #0ff;
+    font-size: 14px;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Кнопки выбора */
+  #choices {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 100;
+  }
+  .choice-btn {
+    background: linear-gradient(135deg, rgba(0,255,255,0.1), rgba(255,0,255,0.1));
+    border: 2px solid #0ff;
+    color: #fff;
+    padding: 20px 40px;
+    font-size: 18px;
+    cursor: pointer;
+    min-width: 400px;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+    text-align: center;
+  }
+  .choice-btn:hover {
+    background: linear-gradient(135deg, rgba(0,255,255,0.3), rgba(255,0,255,0.3));
+    border-color: #fff;
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(0,255,255,0.6);
+  }
+
+  /* Стартовый экран */
+  #start-screen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #000 0%, #0a0a2a 50%, #000 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+  }
+  #start-screen h1 {
+    font-size: 72px;
+    background: linear-gradient(90deg, #0ff, #f0f, #0ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 20px;
+    text-shadow: 0 0 40px rgba(0,255,255,0.5);
+    animation: glow 2s infinite alternate;
+  }
+  #start-screen p {
+    font-size: 22px;
+    color: #aaa;
+    margin-bottom: 50px;
+  }
+  #start-btn {
+    background: linear-gradient(135deg, #0ff, #f0f);
+    border: none;
+    color: #000;
+    padding: 20px 60px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 50px;
+    transition: all 0.3s;
+  }
+  #start-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 50px rgba(0,255,255,0.8);
+  }
+  @keyframes glow { 0%{filter:drop-shadow(0 0 20px #0ff)} 100%{filter:drop-shadow(0 0 40px #f0f)} }
+
+  /* Экран финала */
+  #ending-screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    padding: 40px;
+    text-align: center;
+  }
+  #ending-screen h2 {
+    font-size: 56px;
+    margin-bottom: 30px;
+    text-shadow: 0 0 30px currentColor;
+  }
+  #ending-screen p {
+    font-size: 22px;
+    max-width: 800px;
+    line-height: 1.8;
+    margin-bottom: 40px;
+  }
+  #restart-btn {
+    background: transparent;
+    border: 2px solid #fff;
+    color: #fff;
+    padding: 15px 40px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  #restart-btn:hover {
+    background: #fff;
+    color: #000;
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <!-- Фоны -->
+  <div class="bg bg-ship" data-bg="ship"></div>
+  <div class="bg bg-asteroid" data-bg="asteroid"></div>
+  <div class="bg bg-station-ext" data-bg="station-ext"></div>
+  <div class="bg bg-station-int" data-bg="station-int"></div>
+  <div class="bg bg-ending-good" data-bg="ending-good"></div>
+  <div class="bg bg-ending-bad" data-bg="ending-bad"></div>
+  <div class="bg bg-ending-dark" data-bg="ending-dark"></div>
+
+  <!-- Персонажи -->
+  <div id="characters"></div>
+
+  <!-- Диалоговое окно -->
+  <div id="dialog-box" style="display:none">
+    <div id="speaker"></div>
+    <div id="text"></div>
+    <div id="continue-hint">▼ Продолжить</div>
+  </div>
+
+  <!-- Кнопки выбора -->
+  <div id="choices"></div>
+
+  <!-- Стартовый экран -->
+  <div id="start-screen">
+    <h1>ПОСЛЕДНИЙ СИГНАЛ</h1>
+    <p>Космическая визуальная новелла</p>
+    <button id="start-btn">НАЧАТЬ ИГРУ</button>
+  </div>
+
+  <!-- Экран финала -->
+  <div id="ending-screen">
+    <h2 id="ending-title"></h2>
+    <p id="ending-text"></p>
+    <button id="restart-btn">НАЧАТЬ ЗАНОВО</button>
+  </div>
+</div>
+
+<script>
+// ============ СЦЕНАРИЙ (СОКРАЩЁННЫЙ) ============
+const scenes = {
+  start: {
+    bg: 'ship',
+    chars: [{img:'char_kai.png', id:'kai'}],
+    speaker: 'Кай',
+    text: 'Очередной спокойный день... Жорик, как дела на сканерах?',
+    next: 'signal'
+  },
+  signal: {
+    bg: 'ship',
+    chars: [{img:'char_zhorik.png', id:'zhorik'}],
+    speaker: 'Жорик',
+    text: 'Капитан! Ловлю сигнал бедствия! Это Рен! "Помогите... Дарт Вейдер... станция Омега..."',
+    next: 'decision'
+  },
+  decision: {
+    bg: 'ship',
+    chars: [{img:'char_kai.png', id:'kai'}],
+    speaker: 'Кай',
+    text: 'Мне всё равно. Я не оставлю друга. Курс на станцию "Омега"!',
+    next: 'asteroid1'
+  },
+  asteroid1: {
+    bg: 'asteroid',
+    chars: [{img:'char_kai.png', id:'kai'}],
+    speaker: 'Кай',
+    text: 'Впереди астероидное поле. Дроны Вейдера повсюду. Что делаем?',
+    choices: [
+      {text: '🚀 Рискнуть и лететь напрямик', next: 'station1'},
+      {text: '🪐 Сделать крюк через планету', next: 'station1'}
+    ]
+  },
+  station1: {
+    bg: 'station-ext',
+    chars: [{img:'char_kai.png', id:'kai'}],
+    speaker: 'Кай',
+    text: 'Станция "Омега"... Выглядит жутко. Пристыковываемся.',
+    next: 'station2'
+  },
+  station2: {
+    bg: 'station-int',
+    chars: [{img:'char_vader.png', id:'vader'},{img:'char_ren.png', id:'ren'}],
+    speaker: 'Дарт Вейдер',
+    text: 'Я ждал тебя, Кай. Сдайся — и я пощажу твоего друга.',
+    next: 'final_choice'
+  },
+  final_choice: {
+    bg: 'station-int',
+    chars: [{img:'char_vader.png', id:'vader'}],
+    speaker: 'Кай',
+    text: 'Что мне делать?..',
+    choices: [
+      {text: '⚔️ Атаковать Вейдера!', next: 'ending_bad'},
+      {text: '🧠 Жорик взломает систему', next: 'ending_good'},
+      {text: '🖤 Принять предложение', next: 'ending_dark'}
+    ]
+  },
+
+  // КОНЦОВКИ
+  ending_bad: {
+    bg: 'ending-bad',
+    chars: [],
+    ending: {
+      title: '💀 ПЛОХАЯ КОНЦОВКА',
+      subtitle: 'Гибель героя',
+      text: 'Кай бросился на Вейдера, но тёмный лорд оказался слишком силён. Герой пал. Рен остался в плену. Галактика погрузилась во тьму...'
+    }
+  },
+  ending_good: {
+    bg: 'ending-good',
+    chars: [{img:'char_kai.png', id:'kai'},{img:'char_zhorik.png', id:'zhorik'},{img:'char_ren.png', id:'ren'}],
+    ending: {
+      title: '🌟 ХОРОШАЯ КОНЦОВКА',
+      subtitle: 'Спасение и победа',
+      text: 'Жорик взломал реактор! Пока Вейдер был занят, Кай освободил Рена. Они сбежали, когда станция взорвалась. Друзья спасены, галактика в безопасности!'
+    }
+  },
+  ending_dark: {
+    bg: 'ending-dark',
+    chars: [{img:'char_kai.png', id:'kai'},{img:'char_vader.png', id:'vader'}],
+    ending: {
+      title: '🖤 ТЁМНАЯ КОНЦОВКА',
+      subtitle: 'Падение героя',
+      text: 'Вейдер отпустил Рена, но Кай стал его учеником. Он получил силу, но потерял себя. Галактика обрела нового врага...'
+    }
+  }
+};
+
+// ============ ДВИЖОК ============
+let currentScene = null;
+let textIndex = 0;
+let textTimer = null;
+let fullText = '';
+
+const bgElements = document.querySelectorAll('.bg');
+const charsContainer = document.getElementById('characters');
+const dialogBox = document.getElementById('dialog-box');
+const speakerEl = document.getElementById('speaker');
+const textEl = document.getElementById('text');
+const choicesEl = document.getElementById('choices');
+const startScreen = document.getElementById('start-screen');
+const endingScreen = document.getElementById('ending-screen');
+const endingTitle = document.getElementById('ending-title');
+const endingText = document.getElementById('ending-text');
+
+function setBg(name) {
+  bgElements.forEach(el => {
+    el.classList.toggle('active', el.dataset.bg === name);
+  });
+}
+
+function setChars(chars) {
+  charsContainer.innerHTML = '';
+  chars.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'character';
+    div.style.backgroundImage = `url('${c.img}')`;
+    div.dataset.id = c.id;
+    charsContainer.appendChild(div);
+  });
+}
+
+function highlightSpeaker(name) {
+  document.querySelectorAll('.character').forEach(c => c.classList.remove('speaking'));
+  const map = {'Кай':'kai','Жорик':'zhorik','Дарт Вейдер':'vader','Рен':'ren'};
+  const id = map[name];
+  if (id) {
+    const el = document.querySelector(`.character[data-id="${id}"]`);
+    if (el) el.classList.add('speaking');
+  }
+}
+
+function typeText(text, callback) {
+  fullText = text;
+  textEl.textContent = '';
+  textIndex = 0;
+  clearInterval(textTimer);
+  textTimer = setInterval(() => {
+    if (textIndex < fullText.length) {
+      textEl.textContent += fullText[textIndex];
+      textIndex++;
+    } else {
+      clearInterval(textTimer);
+      if (callback) callback();
+    }
+  }, 30);
+}
+
+function skipText() {
+  if (textIndex < fullText.length) {
+    clearInterval(textTimer);
+    textEl.textContent = fullText;
+    textIndex = fullText.length;
+    return true;
+  }
+  return false;
+}
+
+function showScene(sceneId) {
+  const scene = scenes[sceneId];
+  if (!scene) return;
+  currentScene = scene;
+
+  if (scene.ending) {
+    showEnding(scene.ending);
+    return;
+  }
+
+  setBg(scene.bg);
+  setChars(scene.chars || []);
+  dialogBox.style.display = 'block';
+  choicesEl.style.display = 'none';
+  speakerEl.textContent = scene.speaker || '';
+  highlightSpeaker(scene.speaker);
+  typeText(scene.text);
+}
+
+function showChoices(choices) {
+  choicesEl.innerHTML = '';
+  choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = choice.text;
+    btn.onclick = () => {
+      choicesEl.style.display = 'none';
+      showScene(choice.next);
+    };
+    choicesEl.appendChild(btn);
+  });
+  choicesEl.style.display = 'flex';
+}
+
+function showEnding(ending) {
+  dialogBox.style.display = 'none';
+  endingScreen.style.display = 'flex';
+  endingTitle.textContent = ending.title;
+  endingText.innerHTML = `<strong>${ending.subtitle}</strong><br><br>${ending.text}`;
+  if (ending.title.includes('ХОРОШАЯ')) {
+    endingTitle.style.color = '#00ff88';
+  } else if (ending.title.includes('ПЛОХАЯ')) {
+    endingTitle.style.color = '#ff4444';
+  } else {
+    endingTitle.style.color = '#cc66ff';
+  }
+}
+
+function advance() {
+  if (choicesEl.style.display === 'flex') return;
+  if (skipText()) return;
+  if (currentScene.choices) {
+    showChoices(currentScene.choices);
+  } else if (currentScene.next) {
+    showScene(currentScene.next);
+  }
+}
+
+// СОБЫТИЯ
+document.getElementById('start-btn').onclick = () => {
+  startScreen.style.display = 'none';
+  showScene('start');
+};
+
+document.getElementById('restart-btn').onclick = () => {
+  endingScreen.style.display = 'none';
+  showScene('start');
+};
+
+dialogBox.onclick = advance;
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'Enter') {
+    if (startScreen.style.display !== 'none' && startScreen.style.display !== '') return;
+    if (endingScreen.style.display === 'flex') return;
+    advance();
+  }
+});
+</script>
+</body>
+</html>
