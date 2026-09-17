@@ -18,7 +18,8 @@
     height: 100vh;
     overflow: hidden;
   }
-  /* Фоны */
+  
+  /* ФОНЫ - ТЕПЕРЬ С КАРТИНКАМИ */
   .bg {
     position: absolute;
     inset: 0;
@@ -28,16 +29,14 @@
     opacity: 0;
   }
   .bg.active { opacity: 1; }
-  .bg-ship { background: linear-gradient(135deg, #0a0a2a 0%, #1a1a3a 100%); }
-  .bg-asteroid { background: linear-gradient(135deg, #2a1a3a 0%, #0a0a1a 100%); }
-  .bg-station-ext { background: linear-gradient(135deg, #0a0a0a 0%, #2a0a0a 100%); }
-  .bg-station-int { background: linear-gradient(180deg, #0a0a0a 0%, #2a0a0a 100%); }
+  
+  .bg-ship { background: url('bg_ship.jpg') center/cover; }
+  .bg-asteroid { background: url('bg_asteroid.jpg') center/cover; }
+  .bg-station-ext { background: url('bg_station_ext.jpg') center/cover; }
+  .bg-station-int { background: url('bg_station_int.jpg') center/cover; }
   .bg-ending-good { background: linear-gradient(135deg, #001a2a 0%, #002a4a 100%); }
   .bg-ending-bad { background: linear-gradient(135deg, #2a0000 0%, #000 100%); }
   .bg-ending-dark { background: linear-gradient(135deg, #1a0033 0%, #000 100%); }
-
-  /* Когда будут картинки - замени на: */
-  /* .bg-ship { background: url('bg_ship.jpg') center/cover; } */
 
   /* Персонажи */
   #characters {
@@ -253,7 +252,6 @@
 </div>
 
 <script>
-// ============ СЦЕНАРИЙ (СОКРАЩЁННЫЙ) ============
 const scenes = {
   start: {
     bg: 'ship',
@@ -282,8 +280,8 @@ const scenes = {
     speaker: 'Кай',
     text: 'Впереди астероидное поле. Дроны Вейдера повсюду. Что делаем?',
     choices: [
-      {text: '🚀 Рискнуть и лететь напрямик', next: 'station1'},
-      {text: '🪐 Сделать крюк через планету', next: 'station1'}
+      {text: ' Рискнуть и лететь напрямик', next: 'station1'},
+      {text: ' Сделать крюк через планету', next: 'station1'}
     ]
   },
   station1: {
@@ -311,8 +309,6 @@ const scenes = {
       {text: '🖤 Принять предложение', next: 'ending_dark'}
     ]
   },
-
-  // КОНЦОВКИ
   ending_bad: {
     bg: 'ending-bad',
     chars: [],
@@ -342,7 +338,6 @@ const scenes = {
   }
 };
 
-// ============ ДВИЖОК ============
 let currentScene = null;
 let textIndex = 0;
 let textTimer = null;
@@ -470,7 +465,6 @@ function advance() {
   }
 }
 
-// СОБЫТИЯ
 document.getElementById('start-btn').onclick = () => {
   startScreen.style.display = 'none';
   showScene('start');
